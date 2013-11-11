@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="build bot">
+    <meta name="author" content="Prabhakhar K">
+    
+    <link rel='stylesheet' href='/stylesheets/bootstrap.css' />
+    <link rel='stylesheet' href='/stylesheets/app.css' />
+    <script src="/javascripts/jquery-1.10.2.min.js"></script>
+    <script src="/javascripts/bootstrap.min.js"></script>
+
+  </head>
+  
+
+  <body>
+    <!-- Docs master nav -->
+    <header class="navbar navbar-inverse navbar-fixed-top bs-docs-nav" role="banner">
+    <div class="container">
+        <div class="navbar-header">
+        <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <a href="./" class="navbar-brand"><img src="/images/logo.png"> </a>
+    </div>
+    <nav class="collapse navbar-collapse bs-navbar-collapse pull-right" role="navigation" >
+        <br> <br>
+        <ul class="nav navbar-nav">
+        <li>
+          <a href="#Documents" class="btn btn-outline-inverse btn-lg" id="docs">Documents</a>
+        </li>
+        <li>
+        	&nbsp; &nbsp;
+        </li>
+        <li>
+          <a href="#Help" class="btn btn-outline-inverse btn-lg">Help</a>
+        </li>
+        <li>
+        	&nbsp; &nbsp;
+        </li>
+        <li>
+          <a href="#About" class="btn btn-outline-inverse btn-lg">About</a>
+        </li>
+        </ul>
+    </nav>
+    </div>
+    </header>
+
+    <main class="bs-masthead" id="content" role="main">
+    	<div class="container">
+    	<p class="lead small">One click build for OpenStratus components.</p>
+    	</div>
+    </main>
+
+    <div class="container">
+        <form role="form">
+            <div>
+            <div class="row">
+            <div class="col-md-4">
+
+	        <div class="form-group">
+	            <label for="package">Package</label>
+	            <input type="text" class="form-control" id="package" placeholder="Package to be built" required autofocus>
+	        </div>
+	        <div class="form-group">
+	            <label for="gitUri">Git Uri</label>
+	            <input type="text" class="form-control" id="gitUri" placeholder="Enter Https GitHub URI" required>
+	        </div>
+		    <div class="form-group">
+		        <label for="gitCommitId">Git Commit</label>
+		        <input type="text" class="form-control" id="gitCommitId" placeholder="Commit Id for the build" required>
+		    </div>
+		    </div>
+		    </div>
+ 
+            <br> <br>
+	        <div class="row">
+			<div class="col-md-8">
+		         <button class="btn btn-outline-inverse btn-lg" id="build"> Build <span class="glyphicon glyphicon-arrow-down"></span></button> &nbsp; &nbsp;
+		         <button class="btn btn-outline-inverse btn-lg" id="publish" type="submit" > Build + Publish &nbsp; <span class="glyphicon glyphicon-export"></span></button>
+	        </div>
+	        </div>
+        </form>
+    <hr>
+
+    </div> <!-- /container -->
+
+  </body>
+</html>
