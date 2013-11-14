@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
+#set -x
 
 PACKAGE='keystone'
 VERSION=`head -1 version.txt`
-LOG=$PACKAGE.log
-
-echo Building $PACKAGE version $VERSION
 
 BASE_DIR=`pwd`
 BUILD_DIR=$BASE_DIR/build
+LOG=$BASE_DIR/$PACKAGE.log
+echo Building $PACKAGE version $VERSION | tee -a  $LOG
 
-echo Creating build directory $BUILD_DIR
+echo Creating build directory $BUILD_DIR | tee -a  $LOG
+if [ -d $BUILD_DIR ]; then
+   rm -rf $BUILD_DIR
+fi
+
 mkdir -p $BUILD_DIR/dist
 cd $BUILD_DIR
 
@@ -21,40 +24,54 @@ while read line ; do
    GIT_URL=${a[0]}
    GIT_TAG=${a[1]}
    REPO=`basename ${GIT_URL} .git`
-   echo "Cloning ${GIT_URL}"
    GIT_BASE_DIR=/tmp/${GIT_URL:8}
    mkdir -p ${GIT_BASE_DIR}
    cd ${GIT_BASE_DIR}
-   git clone ${GIT_URL} >> $LOG
-   cd ${REPO};
-   git checkout -f $GIT_TAG >> $LOG
-   python setup.py build sdist >> $LOG
+   if [ -d ${GIT_BASE_DIR}/${REPO} ]; then
+        echo Found repo. Pulling the latest code from ${GIT_URL} | tee -a $LOG
+        cd ${GIT_BASE_DIR}/${REPO}
+        git checkout master &>> $LOG
+        git reset --hard &>> $LOG 
+        git pull &>> $LOG
+   else
+        echo "Cloning ${GIT_URL}" | tee -a $LOG
+        git clone ${GIT_URL} &>> $LOG
+        cd ${REPO};
+   fi
+   git checkout -f $GIT_TAG &>> $LOG
+   python setup.py build sdist &>> $LOG
+   if [ -d $BUILD_DIR/dist ]; then
+       rm -rf $BUILD_DIR/dist/*
+   fi
    cp dist/*.tar.gz $BUILD_DIR/dist/
    SETUP_VERSION=`ls dist | sed -e "s/$PACKAGE-\(.*\).tar.gz/\1/"`
 done < <( cat ../git-repos.txt)
 
-
-mkdir $BUILD_DIR/$PACKAGE
+if [ -d $BUILD_DIR/$PACKAGE ]; then
+    rm -rf $BUILD_DIR/$PACKAGE
+fi
+mkdir -p $BUILD_DIR/$PACKAGE
 cd $BUILD_DIR/$PACKAGE
 
-echo Creating virtualenv in `pwd`/$VERSION
-virtualenv --no-site-packages $VERSION
-cd $VERSION
+echo Creating virtualenv in `pwd`/$VERSION | tee -a  $LOG
+virtualenv ${VERSION} &>> $LOG
+cd ${VERSION}
 . bin/activate
-pip install -U pip >> $LOG
-pip install -U distribute $LOG
+pip install -U pip &>> $LOG
+pip install -U distribute &>> $LOG
 
 while read package ; do
-    echo Installing package $package
-    pip install $BUILD_DIR/dist/$package >> $LOG
+    echo Installing package ${package} | tee -a $LOG
+    pip install $BUILD_DIR/dist/${package} &>> $LOG
 done < <( ls $BUILD_DIR/dist )
 
-echo Installing dependencies
+echo Installing dependencies | tee -a $LOG
 while read line ; do
-  pip install  $line >> $LOG
+  pip install  ${line} &>> $LOG
 done < <( cat $BASE_DIR/pip-requires )
 
 deactivate
 
-echo Detailed log at $LOG
+echo Detailed log at $LOG | tee -a $LOG
 
+cd $BASE_DIR
