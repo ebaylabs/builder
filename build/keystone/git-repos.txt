@@ -1,2 +1,1 @@
-https://github.com/openstack/keystone.git 4221b6020e6b0b42325d8904d7b8a22577a6acc0
-https://github.scm.corp.ebay.com/OpenStratus/keystone-ebay.git 888daf743916b26a20e23e86b4652392c04a0376
+https://github.com/openstack/keystone.git 2013.2 

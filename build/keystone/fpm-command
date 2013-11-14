@@ -2,13 +2,12 @@
    -t deb  \
    -n openstratus-keystone \
    -v 2013.2 \
-   --prefix /opt
    -d python2.7 \
    -d 'python >= 2.7.1-0ubuntu2' \
    -d 'python << 2.8' \
    -d dbconfig-common \
    -d 'debconf (>= 0.5) | debconf-2.0' \
-   -d  'upstart-job' \
+   -d 'upstart-job' \
    -d 'adduser' \
    -d 'ssl-cert (>= 1.0.12)' \
    -d 'dbconfig-common' \
@@ -25,6 +24,7 @@
    --config-files /etc/keystone/default_catalog.templates \
    --config-files /etc/keystone/logging.conf  \
    --maintainer prabhakhar@ebaysf.com \
-   --before-install debian/keystone.preinst 
-   --after-install debian/keystone.postinst
-   --after-remove debian/keystone.postrm
+   --before-install ../../debian/keystone.preinst \
+   --after-install ../../debian/keystone.postinst \
+   --after-remove ../../debian/keystone.postrm \
+   *
