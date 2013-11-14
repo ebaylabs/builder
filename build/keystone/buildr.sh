@@ -7,8 +7,10 @@ PACKAGE='keystone'
 VERSION=`head -1 version.txt`
 
 BASE_DIR=`pwd`
-BUILD_DIR=$BASE_DIR/build
+BUILD_DIR=$BASE_DIR/.build
 LOG=$BASE_DIR/$PACKAGE.log
+
+echo Build started at `date` | tee -a $LOG
 echo Building $PACKAGE version $VERSION | tee -a  $LOG
 
 echo Creating build directory $BUILD_DIR | tee -a  $LOG
@@ -27,6 +29,7 @@ while read line ; do
    GIT_BASE_DIR=/tmp/${GIT_URL:8}
    mkdir -p ${GIT_BASE_DIR}
    cd ${GIT_BASE_DIR}
+   T="$(date +%s)"
    if [ -d ${GIT_BASE_DIR}/${REPO} ]; then
         echo Found repo. Pulling the latest code from ${GIT_URL} | tee -a $LOG
         cd ${GIT_BASE_DIR}/${REPO}
@@ -36,10 +39,18 @@ while read line ; do
    else
         echo "Cloning ${GIT_URL}" | tee -a $LOG
         git clone ${GIT_URL} &>> $LOG
-        cd ${REPO};
+        cd ${REPO}
    fi
    git checkout -f $GIT_TAG &>> $LOG
+   T="$(($(date +%s)-T))"
+   echo ${T}
+   echo Time to get latest code for ${REPO}: ${T}secs | tee -a $LOG
+
+   T="$(date +%s)"
    python setup.py build sdist &>> $LOG
+   T="$(($(date +%s)-T))"
+   echo Time to build ${REPO}: ${T}secs | tee -a $LOG
+
    if [ -d $BUILD_DIR/dist ]; then
        rm -rf $BUILD_DIR/dist/*
    fi
