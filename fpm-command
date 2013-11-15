@@ -21,7 +21,6 @@
    --config-files /etc/init/keystone.conf \
    --config-files /etc/keystone/policy.json \
    --config-files /etc/keystone/keystone.conf \
-   --config-files /etc/keystone/default_catalog.templates \
    --config-files /etc/keystone/logging.conf  \
    --maintainer prabhakhar@ebaysf.com \
    --before-install ../../debian/keystone.preinst \
