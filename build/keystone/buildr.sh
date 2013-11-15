@@ -19,19 +19,19 @@ fi
 # trap for unexpected error
 quit() {
     cd $BASE_DIR
-    echo "$1" | tee -a $LOG
-    echo "Failure." | tee -a $LOG
-    echo "Detailed log in $LOG"
+    echo " [`date`] $1" | tee -a $LOG
+    echo " [`date`] Failure." | tee -a $LOG
+    echo " [`date`] Detailed log in $LOG"
     date | tee -a $LOG
     exit -1
 }
 trap "quit" ERR 
 
 # start build
-echo Build started at `date` | tee -a $LOG
-echo Building $PACKAGE version $VERSION | tee -a  $LOG
+echo " [`date`] Build started." | tee -a $LOG
+echo " [`date`] Building $PACKAGE version $VERSION" | tee -a  $LOG
 
-echo Creating build directory $BUILD_DIR | tee -a  $LOG
+echo " [`date`] Creating build directory $BUILD_DIR" | tee -a  $LOG
 # clean build directory
 if [ -d $BUILD_DIR ]; then
    rm -rf $BUILD_DIR
@@ -52,25 +52,24 @@ while read line ; do
    cd ${GIT_BASE_DIR}
    T="$(date +%s)"
    if [ -d ${GIT_BASE_DIR}/${REPO} ]; then
-        echo Found repo. Pulling the latest code from ${GIT_URL} | tee -a $LOG
+        echo " [`date`] Found repo. Pulling the latest code from ${GIT_URL}" | tee -a $LOG
         cd ${GIT_BASE_DIR}/${REPO}
         git checkout master &>> $LOG
         git reset --hard &>> $LOG 
         git pull &>> $LOG
    else
-        echo "Cloning ${GIT_URL}" | tee -a $LOG
+        echo " [`date`] Cloning ${GIT_URL}" | tee -a $LOG
         git clone ${GIT_URL} &>> $LOG
         cd ${REPO}
    fi
    git checkout -f $GIT_TAG &>> $LOG
    T="$(($(date +%s)-T))"
-   echo ${T}
-   echo Time to get latest code for ${REPO}: ${T} secs | tee -a $LOG
+   echo " [`date`] Time to get latest code for ${REPO}: ${T} secs" | tee -a $LOG
 
    T="$(date +%s)"
    python setup.py build sdist &>> $LOG
    T="$(($(date +%s)-T))"
-   echo Time to build ${REPO}: ${T} secs | tee -a $LOG
+   echo " [`date`] Time to build ${REPO}: ${T} secs" | tee -a $LOG
 
    if [ -d $BUILD_DIR/dist ]; then
        rm -rf $BUILD_DIR/dist/*
@@ -90,22 +89,23 @@ mkdir -p $BUILD_DIR/$PACKAGE
 cd $BUILD_DIR/$PACKAGE
 # }}
 
-echo Creating virtualenv in `pwd`/$VERSION | tee -a  $LOG
+echo " [`date`] Creating virtualenv in `pwd`/$VERSION" | tee -a  $LOG
 virtualenv ${VERSION} &>> $LOG
 cd ${VERSION}
 . bin/activate
+echo " [`date`] Upgrading pip and distribute" 
 pip install -U pip &>> $LOG
 pip install -U distribute &>> $LOG
 
 while read package ; do
-    echo Installing package ${package} | tee -a $LOG
+    echo " [`date`] Installing package ${package}" | tee -a $LOG
     T="$(date +%s)"
 	pip install $BUILD_DIR/dist/${package} &>> $LOG
     T="$(($(date +%s)-T))"
-    echo Time to build ${PACKAGE} in venv: ${T} secs | tee -a $LOG
+    echo " [`date`] Time to build ${PACKAGE} in venv: ${T} secs" | tee -a $LOG
 done < <( ls $BUILD_DIR/dist )
 
-echo Installing dependencies | tee -a $LOG
+echo " [`date`] Installing dependencies from pip-requires" | tee -a $LOG
 while read line ; do
   pip install  ${line} &>> $LOG
 done < <( cat $BASE_DIR/pip-requires )
@@ -158,5 +158,5 @@ fpm -s dir \
    *
 
 cp *.deb $BASE_DIR/
-echo Detailed log at $LOG | tee -a $LOG
+echo " [`date`] Detailed log at $LOG" | tee -a $LOG
 cd $BASE_DIR
