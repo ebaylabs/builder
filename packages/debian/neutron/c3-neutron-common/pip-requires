@@ -1,0 +1,5 @@
+httplib2 
+mysql-python
+python-novaclient
+python-neutronclient
+python-keystoneclient

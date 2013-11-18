@@ -43,6 +43,10 @@ if [ -d $BUILD_DIR ]; then
    rm -rf $BUILD_DIR
 fi
 
+if [ -d $BUILD_DIR/dist ]; then
+    rm -rf $BUILD_DIR/dist/*
+fi
+
 mkdir -p $BUILD_DIR/dist
 cd $BUILD_DIR
 
@@ -77,9 +81,6 @@ while read line ; do
    T="$(($(date +%s)-T))"
    echo "[`date +'%Y-%m-%d %H:%M:%S'`] Time to build ${REPO}: ${T} secs" | tee -a $LOG
 
-   if [ -d $BUILD_DIR/dist ]; then
-       rm -rf $BUILD_DIR/dist/*
-   fi
    cp dist/*.tar.gz $BUILD_DIR/dist/
    SETUP_VERSION=`ls dist | sed -e "s/$PACKAGE-\(.*\).tar.gz/\1/"`
 done < <( cat ${BASE_DIR}/git-repos)
@@ -91,6 +92,7 @@ done < <( cat ${BASE_DIR}/git-repos)
 if [ -d ${BUILD_DIR}/$PACKAGE ]; then
     rm -rf ${BUILD_DIR}/$PACKAGE
 fi
+
 mkdir -p ${BUILD_DIR}/$PACKAGE
 cd ${BUILD_DIR}/$PACKAGE
 # }}
@@ -103,13 +105,16 @@ echo "[`date +'%Y-%m-%d %H:%M:%S'`] Upgrading pip and distribute"
 pip install -U pip &>> $LOG
 pip install -U distribute &>> $LOG
 
-while read package ; do
-    echo "[`date +'%Y-%m-%d %H:%M:%S'`] Installing package ${package}" | tee -a $LOG
-    T="$(date +%s)"
-    pip install $BUILD_DIR/dist/${package} &>> $LOG
-    T="$(($(date +%s)-T))"
-    echo "[`date +'%Y-%m-%d %H:%M:%S'`] Time to build ${PACKAGE} in venv: ${T} secs" | tee -a $LOG
-done < <( ls $BUILD_DIR/dist )
+if [ -d $BUILD_DIR/dist ]; then
+    while read package ; do
+        echo "[`date +'%Y-%m-%d %H:%M:%S'`] Installing package ${package}" | tee -a $LOG
+        T="$(date +%s)"
+        pip install $BUILD_DIR/dist/${package} &>> $LOG
+        T="$(($(date +%s)-T))"
+        echo  -n "[`date +'%Y-%m-%d %H:%M:%S'`] "
+        echo "Time to build ${PACKAGE} in venv: ${T} secs" | tee -a $LOG
+    done < <( ls $BUILD_DIR/dist )
+fi
 
 echo "[`date +'%Y-%m-%d %H:%M:%S'`] Installing dependencies from pip-requires" | tee -a $LOG
 while read line ; do
