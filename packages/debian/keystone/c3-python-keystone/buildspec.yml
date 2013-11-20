@@ -1,0 +1,26 @@
+name: c3-python-keystone
+version: 2013.2
+description: "Virtual env based python-keystone package, for c3 deployments."
+maintainer: prabhakhar@ebaysf.com
+deb-package-url: "http://mirrors.kernel.org/ubuntu/pool/main/k/keystone/python-keystone_2013.2-0ubuntu1_all.deb"
+git-repos: 
+    - uri: https://github.com/openstack/keystone.git 
+      path: 2013.2 
+    - uri: https://github.scm.corp.ebay.com/OpenStratus/keystone-ebay.git
+      path: 888daf743916b26a20e23e86b4652392c04a0376
+debian-dependencies:
+    - python2.7
+    - 'python >= 2.7.1-0ubuntu2'
+    - 'python << 2.8' 
+    - dbconfig-common 
+    - 'debconf (>= 0.5) | debconf-2.0' 
+    - 'upstart-job' 
+    - 'adduser' 
+    - 'ssl-cert (>= 1.0.12)' 
+    - 'dbconfig-common' 
+    - python-lxml
+    - libmysqlclient-dev
+pip-requires:
+    - httplib2 
+    - mysql-python
+    - python-keystoneclient

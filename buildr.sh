@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
+
+green='\e[0;32m'
+red='\e[0;31m'
+endColor='\e[0m'
+
+PACKAGE=`head -1 $BASE_DIR/package`
 
 if [ -z $PACKAGE ]; then
-    echo "PACKAGE env variable must be passed"
+    echo "${red}PACKAGE env variable must be passed${endColor}"
     exit -1
 fi
 CWD=`pwd`
@@ -26,9 +31,9 @@ fi
 # trap for unexpected error
 quit() {
     cd $BASE_DIR
-    echo "[`date +'%Y-%m-%d %H:%M:%S'`] $1" | tee -a $LOG
-    echo "[`date +'%Y-%m-%d %H:%M:%S'`] Failure." | tee -a $LOG
-    echo "[`date +'%Y-%m-%d %H:%M:%S'`] Detailed log in $LOG"
+    echo "[`date +'%Y-%m-%d %H:%M:%S'`] ${red}$1${endColor}" | tee -a $LOG
+    echo "[`date +'%Y-%m-%d %H:%M:%S'`] ${red}Failure.${endColor}" | tee -a $LOG
+    echo "[`date +'%Y-%m-%d %H:%M:%S'`] ${red}Detailed log in${endColor} $LOG"
     exit -1
 }
 trap "quit" ERR 
@@ -74,7 +79,7 @@ while read line ; do
    fi
    git checkout -f $GIT_TAG &>> $LOG
    T="$(($(date +%s)-T))"
-   echo "[`date +'%Y-%m-%d %H:%M:%S'`] Time to get latest code for ${REPO}: ${T} secs" | tee -a $LOG
+   echo "[`date +'%Y-%m-%d %H:%M:%S'`] Time to get latest code for ${REPO}: ${green}${T}${endColor} secs" | tee -a $LOG
 
    T="$(date +%s)"
    python setup.py build sdist &>> $LOG
@@ -112,13 +117,13 @@ if [ -d $BUILD_DIR/dist ]; then
         pip install $BUILD_DIR/dist/${package} &>> $LOG
         T="$(($(date +%s)-T))"
         echo  -n "[`date +'%Y-%m-%d %H:%M:%S'`] "
-        echo "Time to build ${PACKAGE} in venv: ${T} secs" | tee -a $LOG
+        echo "Time to build ${PACKAGE} in venv: ${green}${T}${endColor} secs" | tee -a $LOG
     done < <( ls $BUILD_DIR/dist )
 fi
 
 echo "[`date +'%Y-%m-%d %H:%M:%S'`] Installing dependencies from pip-requires" | tee -a $LOG
 while read line ; do
-    echo "[`date +'%Y-%m-%d %H:%M:%S'`] * Installing $line"
+    echo "[`date +'%Y-%m-%d %H:%M:%S'`] ${green}*${endColor} Installing $line"
     pip install  ${line} &>> $LOG
 done < <( cat $BASE_DIR/pip-requires )
 
@@ -149,7 +154,7 @@ mv  ${BUILD_DIR}/${PACKAGE}/${VERSION} opt/${PACKAGE}/
 #TODO DEPS go to a seperate file
 FPM_COMMAND="fpm -s dir \
    -t deb  \
-   -n c3-keystone \
+   -n ${PACKAGE} \
    -v 2013.2 \
    -a all \
    --vendor c3 \
