@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
 
+# ACTION=CREATE_VENV BASE_DIR=. 
+
 set -e
-BASE_DIR=$1
+set -x
 
+ACTION=$1
+BASE_DIR=$2
+PACKAGE=$3
+VERSION=$4
 
-create_virtualenv() {
-    cd ${BASE_DIR}
+echo $ACTION
+
+if [ ${ACTION} == 'CREATE_VENV' ]; then
+    echo "I am here"
+	cd $BASE_DIR
     virtualenv . 
     source bin/activate
-
     pip install -U pip 
     pip install -U distribute 
-
     deactivate 
-    virtualenv --relocatable ${BASE_DIR}
-
-} 
+	exit 0
+fi
 

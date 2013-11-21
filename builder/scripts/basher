@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+# ACTION=CREATE_VENV BASE_DIR=. 
+
+set -e
+set -x
+
+ACTION=$1
+BASE_DIR=$2
+PACKAGE=$3
+VERSION=$4
+VENV=$5
+
+echo $ACTION
+echo $BASE_DIR
+echo $PACKAGE
+echo $VERSION
+echo $VENV
+
+#
+# create virtual env
+#
+if [ $ACTION == 'CREATE_VENV' ]; then
+    echo "I am here"
+	cd $VENV
+    virtualenv . 
+    source bin/activate
+    pip install -U pip 
+    pip install -U distribute 
+    deactivate 
+	exit 0
+fi
+
+#
+# Install a package in given venv
+#
+if [ $ACTION == 'INSTALL' ]; then
+	cd $VENV
+    source bin/activate
+    pip install ${PACKAGE} 
+    deactivate 
+fi	
+
+#
+# create package
+#
+if [ $ACTION == 'PACKAGE' ]; then
+No	mkdir -p ${BASE_DIR}/deb/data
+	cd ${BASE_DIR}/deb
+
+	wget $DEB_URL
+	ar -x `ls *.deb`
+	tar zxf data.tar.gz -C data/
+	rsync -av --exclude=usr/share/pyshared --exclude=usr/lib/python2.7 data/ ${BUILD_DIR}/${PACKAGE}/
+
+	mkdir -p control
+	tar zxf control.tar.gz -C control/
+fi	
