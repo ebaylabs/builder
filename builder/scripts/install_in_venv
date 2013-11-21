@@ -2,13 +2,18 @@
 
 set -e
 
-BASE_DIR=$1
-PACKAGE=$2
-LOG=$2
+PACKAGE=$1
+BASE_DIR=$2
+
+echo $BASE_DIR
+echo `pwd`
+echo $PACKAGE
 
 cd ${BASE_DIR}
+echo `pwd`
 . bin/activate
-pip install ${PACKAGE} &>> $LOG
-deactivate &>> $LOG
-virtualenv --relocatable ${BASE_DIR} &>> $LOG
+pip install ${PACKAGE} 
+deactivate 
+virtualenv --relocatable .
+
 

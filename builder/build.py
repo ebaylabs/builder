@@ -75,28 +75,23 @@ def gitCheckout(path, repoDir, logfile):
 	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=repoDir)
 	p.wait()
 
-
 def install(cwd, logfile):
 	cmd = ['python', 'setup.py', 'build', 'sdist']
 	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
 	p.wait()
 
-def createVenv(path, logfileName, logfile):
-	cmd = [u'./scripts/create_venv', path, logfileName]
-	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=path)
+def createVenv(path, logfile, cwd):
+	cmd = [u'./scripts/create_venv', path]
+	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
 	p.wait()
 
-def installWithVenv(path, package, logfile):
-	cmd = ['scripts/install_in_venv', path, package, logfile]
-	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=path)
+def installWithVenv(package, venv, logfile, cwd):
+	cmd = [u'./scripts/install_in_venv', package]
+	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
 	p.wait()
 
-
-config = readConfig("/Users/pkaliyamurthy/Stack/buildr/packages/debian/keystone/c3-python-keystone/buildspec.yml")
-
-print config
-
-print ""
+cwd = os.getcwd()
+config = readConfig("../packages/debian/keystone/c3-python-keystone/buildspec.yml")
 
 maintainer = config.get("maintainer")
 packageName = config.get("name")
@@ -115,7 +110,8 @@ buildDir = "./.build/%s/%s" % (packageName, packageVersion)
 if not os.path.isdir(buildDir):
 	os.makedirs(buildDir)
 
-createVenv(buildDir, logfileName, logfile)
+p.log("Creating virtualenv in %s/%s" % ( cwd, buildDir ))
+createVenv(buildDir, logfile, cwd)
 	
 for repo in config.get("git-repos"):
 	''' remove https '''
@@ -133,8 +129,9 @@ for repo in config.get("git-repos"):
 	path = repo.get('path')
 	gitCheckout(str(path), repoPath, logfile)
 	install(repoPath, logfile)
-
-
-
+        package_tar = subprocess.check_output(["ls", repoPath + "/dist/"])
+        tar = repoPath + '/dist/' + package_tar
+	installWithVenv(tar, cwd + "/" + buildDir, logfile, cwd)
+ 
 logfile.close()
-quit("Awesome")
+p.info("Detailed log in %s" % cwd + logfileName)

@@ -2,13 +2,12 @@
 
 set -e
 BASE_DIR=$1
-LOG=$2
 
 cd ${BASE_DIR}
-virtualenv . &>> $LOG
+virtualenv . 
 . bin/activate
 
-pip install -U pip &>> $LOG
+pip install -U pip 
 pip install -U distribute &>> $LOG
 
 deactivate &>> $LOG
