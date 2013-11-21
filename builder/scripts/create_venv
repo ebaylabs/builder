@@ -3,13 +3,17 @@
 set -e
 BASE_DIR=$1
 
-cd ${BASE_DIR}
-virtualenv . 
-. bin/activate
 
-pip install -U pip 
-pip install -U distribute &>> $LOG
+create_virtualenv() {
+    cd ${BASE_DIR}
+    virtualenv . 
+    source bin/activate
 
-deactivate &>> $LOG
-virtualenv --relocatable ${BASE_DIR} &>> $LOG
+    pip install -U pip 
+    pip install -U distribute 
+
+    deactivate 
+    virtualenv --relocatable ${BASE_DIR}
+
+} 
 

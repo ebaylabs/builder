@@ -86,12 +86,19 @@ def createVenv(path, logfile, cwd):
 	p.wait()
 
 def installWithVenv(package, venv, logfile, cwd):
-	cmd = [u'./scripts/install_in_venv', package]
+	cmd = [u'./scripts/install_in_venv', package, venv]
+	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
+	p.wait()
+
+def createPackage(path, fpmCmd, debUrl, logfile, cwd):
+	cmd = [u'./scripts/create_package', path, fpmCmd, debUrl]
 	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
 	p.wait()
 
 cwd = os.getcwd()
 config = readConfig("../packages/debian/keystone/c3-python-keystone/buildspec.yml")
+
+p.log(str(config))
 
 maintainer = config.get("maintainer")
 packageName = config.get("name")
@@ -105,7 +112,7 @@ logfileName = "%s.log" % (packageName)
 logfile = open(logfileName, 'w+')
 logfile.write(p.info("Building '%s' version '%s'" % (packageName, packageVersion)))
 
-buildDir = "./.build/%s/%s" % (packageName, packageVersion)
+buildDir = ".build/opt/%s/%s" % (packageName, packageVersion)
 
 if not os.path.isdir(buildDir):
 	os.makedirs(buildDir)
@@ -132,6 +139,13 @@ for repo in config.get("git-repos"):
         package_tar = subprocess.check_output(["ls", repoPath + "/dist/"])
         tar = repoPath + '/dist/' + package_tar
 	installWithVenv(tar, cwd + "/" + buildDir, logfile, cwd)
- 
+
+for pip_dep in pipRequires:
+	installWithVenv(pip_dep, cwd + "/" + buildDir, logfile, cwd) 
+
+# def createPackage(path, fpmCmd, debUrl, logfile, cwd):
+createPackage(cwd + "/.build", "ls", debPackageUrl, logfile, cwd)
+
 logfile.close()
-p.info("Detailed log in %s" % cwd + logfileName)
+
+p.info("Detailed log in %s" % cwd + "/" + logfileName)
