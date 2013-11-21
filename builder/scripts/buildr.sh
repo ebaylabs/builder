@@ -48,6 +48,10 @@ if [ -d $BUILD_DIR ]; then
    rm -rf $BUILD_DIR
 fi
 
+if [ -d $BUILD_DIR/dist ]; then
+    rm -rf $BUILD_DIR/dist/*
+fi
+
 mkdir -p $BUILD_DIR/dist
 cd $BUILD_DIR
 

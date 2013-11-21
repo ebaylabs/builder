@@ -59,25 +59,44 @@ def quit(msg):
 	sys.exit(-1)
 
 
-def gitUpdate(uri, repoDir, logFile):
-	gitCheckout('master', repoDir, logFile)
+def gitUpdate(uri, repoDir, logfile):
+	gitCheckout('master', repoDir, logfile)
 	cmd = ['git', 'pull', uri]
-	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logFile, cwd=repoDir)
+	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=repoDir)
 	p.wait()
 
-def gitClone(uri, repoDir, logFile):
+def gitClone(uri, repoDir, logfile):
     cmd = ['git', 'clone', uri]
-    p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logFile, cwd=repoDir)
+    p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=repoDir)
     p.wait()
 
-def gitCheckout(commit, repoDir, logFile):
-    cmd = ['git', 'checkout', '-f', commit]
-    p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logFile, cwd=repoDir)
-    p.wait()
+def gitCheckout(path, repoDir, logfile):
+	cmd = ['git', 'checkout', '-f', path]
+	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=repoDir)
+	p.wait()
+
+
+def install(cwd, logfile):
+	cmd = ['python', 'setup.py', 'build', 'sdist']
+	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
+	p.wait()
+
+def createVenv(path, logfileName, logfile):
+	cmd = [u'./scripts/create_venv', path, logfileName]
+	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=path)
+	p.wait()
+
+def installWithVenv(path, package, logfile):
+	cmd = ['scripts/install_in_venv', path, package, logfile]
+	p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=path)
+	p.wait()
+
 
 config = readConfig("/Users/pkaliyamurthy/Stack/buildr/packages/debian/keystone/c3-python-keystone/buildspec.yml")
 
 print config
+
+print ""
 
 maintainer = config.get("maintainer")
 packageName = config.get("name")
@@ -86,23 +105,36 @@ pipRequires = config.get("pip-requires")
 debianDeps = config.get("debian-dependencies")
 debPackageUrl = config.get("deb-package-url")
 
+logfileName = "%s.log" % (packageName)
 
-logfile = open("%s.log" % (packageName), 'w')
+logfile = open(logfileName, 'w+')
 logfile.write(p.info("Building '%s' version '%s'" % (packageName, packageVersion)))
 
+buildDir = "./.build/%s/%s" % (packageName, packageVersion)
 
+if not os.path.isdir(buildDir):
+	os.makedirs(buildDir)
 
+createVenv(buildDir, logfileName, logfile)
+	
 for repo in config.get("git-repos"):
 	''' remove https '''
 	uri = repo.get('uri')
-	repoDir = "/tmp/" + uri[8:4]
-	print repoDir
+	repoName = uri[uri.rindex("/") + 1:-4]
+	repoDir = "/tmp/c3build/" + uri[8:uri.rindex("/")]
+	repoPath = repoDir + "/" + repoName
 	if os.path.isdir(repoDir):
-		gitUpdate(uri, repoDir, logfile)
+		gitUpdate(uri, repoPath, logfile)
 	else:
 		logfile.write("Creating directory %s for cloning" % (repo))
 		os.makedirs(repoDir)
 		logfile.write(p.log("Cloning '%s' under '%s'" % (uri, repoDir)))
 		gitClone(uri, repoDir, logfile)
-logfile.close() 
+	path = repo.get('path')
+	gitCheckout(str(path), repoPath, logfile)
+	install(repoPath, logfile)
+
+
+
+logfile.close()
 quit("Awesome")

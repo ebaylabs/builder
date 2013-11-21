@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -e
+BASE_DIR=$1
+LOG=$2
+
+cd ${BASE_DIR}
+virtualenv . &>> $LOG
+. bin/activate
+
+pip install -U pip &>> $LOG
+pip install -U distribute &>> $LOG
+
+deactivate &>> $LOG
+virtualenv --relocatable ${BASE_DIR} &>> $LOG
+
