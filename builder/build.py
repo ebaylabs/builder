@@ -3,83 +3,19 @@
 from datetime import datetime
 import sys
 import yaml
+import shutil
 from subprocess import Popen
 import subprocess
 import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('buildspec', help="file containing build specification")
-parser.add_argument('-t', '--format', dest='format', default='tar', help="package type, ex tar, deb. deafult is tar")
-parser.add_argument('-d', '--debug', dest='debug',  action='store_true', help="run in debug mode")
+parser.add_argument('buildspec', help="a yaml file, containing the build specification. For a sample build specification, refer https://github.scm.corp.ebay.com/gist/pkaliyamurthy/1735")
+parser.add_argument('-t', '--format', dest='format', default='tar', 
+        help="package type, ex., 'tar'. expect support for building 'deb' packages. Default is tar")
+parser.add_argument('-d', '--debug', dest='debug', action='store_true', help="run the build in debug mode. enables verbose output.")
+parser.add_argument('-c', '--clean', dest='clean', action='store_true', help="option to clean all the local github repos/venvs that might have been created for this package during previous builds.")
 args = parser.parse_args()
-
-class Printer:
-    PINK = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    FAIL = '\033[91m'
-    GREY = '\033[90m'
-    ENDC = '\033[0m'
-
-    def pre(self):
-        return self.GREY + "[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] " + self.ENDC
-
-    def info(self, msg):
-        print self.pre() + self.PINK + msg + self.ENDC
-        return self.pre() + msg + "\n"
-
-    def warn(self, msg):
-        print self.pre() + self.PINK + msg + self.ENDC
-        return self.pre() + msg + "\n"
-
-    def err(self, msg):
-        print self.pre() + self.FAIL + msg + self.ENDC
-        return self.pre() + msg + "\n"
-
-    def debug(self, msg):
-        if args.debug:
-            self.log(msg)
-
-    def log(self, msg):
-        print self.pre() + msg
-        return self.pre() + msg + "\n"
-
-    def disable(self):
-        self.HEADER = ''
-        self.OKBLUE = ''
-        self.OKGREEN = ''
-        self.WARNING = ''
-        self.FAIL = ''
-
-p = Printer()
-
-def readConfig(configFile):
-    with open(configFile) as f:
-        config = yaml.load(f)
-        p.debug(str(config))
-        return config
-try:
-    config = readConfig(args.buildspec)
-except IOError, e:
-    p.err("Fatal: config file '%s' is not found." % args.buildspec)
-    p.err("For usage, try 'build.py --help'") 
-    sys.exit(-1)
-except:
-    p.err("fatal: config file '%s' can not be read or invalid." % args.buildspec)
-    p.err("For usage, try 'build.py --help'") 
-    sys.exit(-1)
-
-#
-# capture the config in local variables for ease of use
-#
-maintainer = config.get("maintainer")
-package_name = config.get("name")
-version = str(config.get("version"))
-pip_requires = config.get("pip-requires")
-debian_deps = config.get("debian-dependencies")
-deb_url = config.get("deb-package-url")
 
 def quit(msg):
     p.err(msg)
@@ -131,6 +67,87 @@ def tar(venv, package, version, logfile, cwd):
     cmd = [u'./scripts/basher', 'TAR', venv, package, version]
     p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
     p.wait()
+class Printer:
+    PINK = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    FAIL = '\033[91m'
+    GREY = '\033[90m'
+    ENDC = '\033[0m'
+
+    def pre(self):
+        return self.GREY + "[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] " + self.ENDC
+
+    def info(self, msg):
+        print self.pre() + self.PINK + msg + self.ENDC
+        return self.pre() + msg + "\n"
+
+    def warn(self, msg):
+        print self.pre() + self.PINK + msg + self.ENDC
+        return self.pre() + msg + "\n"
+
+    def err(self, msg):
+        print self.pre() + self.FAIL + msg + self.ENDC
+        return self.pre() + msg + "\n"
+
+    def debug(self, msg):
+        if args.debug:
+            self.log(msg)
+
+    def log(self, msg):
+        print self.pre() + msg
+        return self.pre() + msg + "\n"
+
+p = Printer()
+
+'''
+Reads the build configuration yaml
+'''
+def readConfig(configFile):
+    with open(configFile) as f:
+        config = yaml.load(f)
+        if args.debug:
+            p.warn("Build specification:")
+            for line in yaml.dump(config).splitlines():
+                if(line.find(':') > 0):
+                    p.debug('\t' + p.BLUE + line[:line.index(':')] + p.ENDC + line[line.index(':'):])
+                else:
+                    p.debug('\t' + line)
+        return config
+
+
+
+try:
+    config = readConfig(args.buildspec)
+except IOError, e:
+    p.err("Fatal: config file '%s' is not found." % args.buildspec)
+    p.err("For usage, try 'build.py --help'")
+    if args.debug:
+        raise
+    sys.exit(-1)
+except:
+    p.err("CRITICAL: config file '%s' can not be read or invalid." % args.buildspec)
+    p.err("For usage, try 'build.py --help'") 
+    if args.debug:
+        raise
+    sys.exit(-1)
+
+#
+# capture the config in local variables for ease of use
+#
+maintainer = config.get("maintainer")
+package_name = config.get("name")
+version = str(config.get("version"))
+pip_requires = config.get("pip-requires")
+debian_deps = config.get("debian-dependencies")
+deb_url = config.get("deb-package-url")
+
+p.debug(" ")
+p.info("Building '%s' version '%s'" % (package_name, version))
+
+
+
     
 
 basedir = os.getcwd()
@@ -146,7 +163,12 @@ if not os.path.isdir(logdir):
 logfileName = logdir + "/%s.log" % ( package_name + "_" + version )
 logfile = open(logfileName, 'w+')
 
-p.info("Building '%s' version '%s'" % (package_name, version))
+
+
+if args.clean:
+    p.log("Cleaning working directory." +  p.FAIL + " Beware 'clean' build takes lot of time!" + p.ENDC)
+    if os.path.isdir(venv):
+        shutil.rmtree(venv)
 
 if os.path.isdir(venv):
     p.log("Virtualenv exists.")
@@ -157,9 +179,13 @@ else:
     create_venv(venv, logfile, basedir)
     p.log("Virtualenv created: '%s'" % ( venv ))
 
-if not os.path.isdir(debdir):
-    os.makedirs(debdir)
 
+if args.format == 'deb':
+    if os.path.isdir(debdir):
+        if args.clean:
+            shutil.rmtree(debdir)
+    else:
+        os.makedirs(debdir)
 
 ''' install '''
 for repo in config.get("git-repos"):
@@ -169,6 +195,12 @@ for repo in config.get("git-repos"):
     p.log("Installing %s'%s'%s" % (p.GREEN, repo_name, p.ENDC))
     repo_dir = builddir + '/' + uri[8:uri.rindex("/")]
     repo_path = repo_dir + '/' + repo_name
+
+    # clean git repository so that we get a fresh clone
+    if args.clean:
+        if os.path.isdir(repo_dir):
+            shutil.rmtree(repo_dir)
+
     if os.path.isdir(repo_path):
         p.log("  * Found repo. Pulling latest code.")
         p.debug("    Repo: %s." % repo_path)
@@ -198,8 +230,8 @@ for pip_dep in pip_requires:
 
 if args.format == 'tar':
     tar_name = package_name + '-' + version + '.tar.gz'
-    p.log("Creating tar - %s, just for you. Sit tight." % tar_name)
+    p.log("Creating tar - %s'%s'%s, just for you. Sit tight." % (p.BLUE, tar_name, p.ENDC))
     tar(venv, package_name, version, logfile, basedir)
 
 logfile.close()
-p.info("Detailed log in %s" % logfileName)
+p.log("Detailed log in %s" % logfileName)
