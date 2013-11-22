@@ -9,8 +9,8 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("buildspec", help="buildspec, the file name to use for this build")
-parser.add_argument("--debug", help="run in debug mode")
+parser.add_argument("buildspec", help="file containing build specification")
+parser.add_argument("--debug", dest='debug',  action='store_true', help="run in debug mode")
 args = parser.parse_args()
 
 class Printer:
@@ -52,7 +52,6 @@ class Printer:
         self.WARNING = ''
         self.FAIL = ''
 
-
 p = Printer()
 
 def readConfig(configFile):
@@ -63,12 +62,13 @@ def readConfig(configFile):
 try:
     config = readConfig(args.buildspec)
 except IOError, e:
-    p.err("fatal: config file '%s' is not found." % args.buildspec)
-    raise
+    p.err("Fatal: config file '%s' is not found." % args.buildspec)
+    p.err("For usage, try 'build.py --help'") 
+    sys.exit(-1)
 except:
     p.err("fatal: config file '%s' can not be read or invalid." % args.buildspec)
-    raise
-
+    p.err("For usage, try 'build.py --help'") 
+    sys.exit(-1)
 
 # capture the config in local variables for ease of use
 #
@@ -137,46 +137,55 @@ if not os.path.isdir(logdir):
 
 logfileName = logdir + "/%s.log" % ( package_name + "_" + version )
 
-if not os.path.isdir(venv):
+p.info("Building '%s' version '%s'" % (package_name, version))
+
+if os.path.isdir(venv):
+    p.log("Virtualenv exists.")
+    p.debug("  Path: %s" % venv)
+else:
     os.makedirs(venv)
+    create_venv(venv, logfile, basedir)
+    p.debug("Virtualenv created: '%s'" % ( venv ))
 
 if not os.path.isdir(debdir):
     os.makedirs(debdir)
 
-p.log(str(config))
-
 logfile = open(logfileName, 'w+')
-logfile.write(p.info("Building '%s' version '%s'" % (package_name, version)))
-p.log("Creating virtualenv in %s" % ( venv ))
-
-# create virtual env
-create_venv(venv, logfile, basedir)
 
 ''' install '''
 for repo in config.get("git-repos"):
     ''' remove https '''
     uri = repo.get('uri')
     repo_name = uri[uri.rindex("/") + 1:-4]
-    repo_dir = builddir + + '/' + uri[8:uri.rindex("/")]
+    p.log("Installing %s'%s'%s" % (p.GREEN, repo_name, p.ENDC))
+    repo_dir = builddir + '/' + uri[8:uri.rindex("/")]
     repo_path = repo_dir + '/' + repo_name
     if os.path.isdir(repo_path):
+        p.log("  * Found repo. Pulling latest code.")
+        p.debug("    Repo: %s." % repo_path)
         git_pull(uri, repo_path, logfile)
     else:
-        logfile.write("Creating directory %s for cloning" % (repo))
+        p.debug("  * Creating directory %s for cloning" % (repo))
         os.makedirs(repo_dir)
-        logfile.write(p.log("Cloning '%s' under '%s'" % (uri, repo_dir)))
+        p.log("  * Cloning '%s' under '%s'" % (uri, repo_dir))
         git_clone(uri, repo_dir, logfile)
     path = repo.get('path')
     git_checkout(str(path), repo_path, logfile)
+    p.log("  * Building '%s'" % (repo_name))
+    p.debug("    using dir: '%s'" % (repo_path))
     build(repo_path, logfile)
-    package_tar = subprocess.check_output(["ls", repo_path + "/dist/"])
+    package_tar = subprocess.check_output(["ls", repo_path + "/dist/"]).rstrip('\n')
     tar = repo_path + '/dist/' + package_tar
-    install(venv, package, logfile, basedir)
+    p.log("  * Installing '%s'" % package_tar)
+    p.debug("    using tar: %s" % tar)
+    install(venv, tar, logfile, basedir)
 
 ''' install all pip requirements '''
+p.log("Installing " + p.GREEN + "pip dependencies" + p.ENDC)
 for pip_dep in pip_requires:
+    p.log("  * " + pip_dep)
     install(venv, pip_dep, logfile, basedir)
 
 # package(cwd + "/.build", "ls", deb_url, logfile, cwd)
 logfile.close()
-p.info("Detailed log in %s" % basedir + "/" + logfileName)
+p.info("Detailed log in %s" % logfileName)
