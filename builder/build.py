@@ -70,6 +70,7 @@ except:
     p.err("For usage, try 'build.py --help'") 
     sys.exit(-1)
 
+#
 # capture the config in local variables for ease of use
 #
 maintainer = config.get("maintainer")
@@ -136,6 +137,7 @@ if not os.path.isdir(logdir):
     os.mkdir(logdir)
 
 logfileName = logdir + "/%s.log" % ( package_name + "_" + version )
+logfile = open(logfileName, 'w+')
 
 p.info("Building '%s' version '%s'" % (package_name, version))
 
@@ -144,13 +146,13 @@ if os.path.isdir(venv):
     p.debug("  Path: %s" % venv)
 else:
     os.makedirs(venv)
+    p.log("Creating virtualenv...");
     create_venv(venv, logfile, basedir)
-    p.debug("Virtualenv created: '%s'" % ( venv ))
+    p.log("Virtualenv created: '%s'" % ( venv ))
 
 if not os.path.isdir(debdir):
     os.makedirs(debdir)
 
-logfile = open(logfileName, 'w+')
 
 ''' install '''
 for repo in config.get("git-repos"):
