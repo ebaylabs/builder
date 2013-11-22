@@ -9,8 +9,9 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("buildspec", help="file containing build specification")
-parser.add_argument("--debug", dest='debug',  action='store_true', help="run in debug mode")
+parser.add_argument('buildspec', help="file containing build specification")
+parser.add_argument('-t', '--format', dest='format', default='tar', help="package type, ex tar, deb. deafult is tar")
+parser.add_argument('-d', '--debug', dest='debug',  action='store_true', help="run in debug mode")
 args = parser.parse_args()
 
 class Printer:
@@ -126,6 +127,12 @@ def package(path, fpmCmd, debUrl, logfile, cwd):
     p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
     p.wait()
 
+def tar(venv, package, version, logfile, cwd):
+    cmd = [u'./scripts/basher', 'TAR', venv, package, version]
+    p = Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile, cwd=cwd)
+    p.wait()
+    
+
 basedir = os.getcwd()
 logdir = basedir + "/logs"
 tmpdir = '/tmp/c3build'
@@ -177,10 +184,10 @@ for repo in config.get("git-repos"):
     p.debug("    using dir: '%s'" % (repo_path))
     build(repo_path, logfile)
     package_tar = subprocess.check_output(["ls", repo_path + "/dist/"]).rstrip('\n')
-    tar = repo_path + '/dist/' + package_tar
+    tarname = repo_path + '/dist/' + package_tar
     p.log("  * Installing '%s'" % package_tar)
-    p.debug("    using tar: %s" % tar)
-    install(venv, tar, logfile, basedir)
+    p.debug("    using tar: %s" % tarname)
+    install(venv, tarname, logfile, basedir)
 
 ''' install all pip requirements '''
 p.log("Installing " + p.GREEN + "pip dependencies" + p.ENDC)
@@ -188,6 +195,11 @@ for pip_dep in pip_requires:
     p.log("  * " + pip_dep)
     install(venv, pip_dep, logfile, basedir)
 
-# package(cwd + "/.build", "ls", deb_url, logfile, cwd)
+
+if args.format == 'tar':
+    tar_name = package_name + '-' + version + '.tar.gz'
+    p.log("Creating tar - %s, just for you. Sit tight." % tar_name)
+    tar(venv, package_name, version, logfile, basedir)
+
 logfile.close()
 p.info("Detailed log in %s" % logfileName)
